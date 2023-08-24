@@ -58,12 +58,12 @@ public class GitHubAPIService {
                                         "Internal error, you might have exceeded the request limit")))
                         .bodyToFlux(GitHubRepository.class)
                         .filter(repo -> !repo.fork())
-                        .flatMap(repo -> fetchBranchesForRepository(repo.owner(), repo.name(), username, repo.fork()))
+                        .flatMap(repo -> fetchBranchesForRepository(repo.owner(), repo.name(), repo.fork()))
                         .collectList();
     }
 
     private Mono<GitHubRepository> fetchBranchesForRepository(Owner owner, String
-            repoName, String ownerLogin, boolean fork) {
+            repoName, boolean fork) {
         return webClient.get()
                         .uri("/repos/{owner}/{repoName}/branches", owner.login(), repoName)
                         .header("Accept", "application/json")
