@@ -22,9 +22,12 @@ public class GlobalExceptionHandler {
         } else if (ex instanceof NotAcceptableException) {
             status = HttpStatus.NOT_ACCEPTABLE.value();
             errorMessage = ex.getMessage();
+        } else if (ex instanceof InternalServerErrorException) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR.value();
+            errorMessage = ex.getMessage();
         } else {
             status = HttpStatus.INTERNAL_SERVER_ERROR.value();
-            errorMessage = "An error occurred.";
+            errorMessage = "Something went wrong";
         }
 
         ErrorResponseBody errorResponseBody = new ErrorResponseBody(status, errorMessage);

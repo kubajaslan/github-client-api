@@ -3,10 +3,7 @@ package com.example.githubclientapi.service;
 import com.example.githubclientapi.entity.Branch;
 import com.example.githubclientapi.entity.GitHubRepository;
 import com.example.githubclientapi.entity.Owner;
-import com.example.githubclientapi.exception.ErrorResponseBody;
-import com.example.githubclientapi.exception.ForbiddenException;
-import com.example.githubclientapi.exception.NotAcceptableException;
-import com.example.githubclientapi.exception.NotFoundException;
+import com.example.githubclientapi.exception.*;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +51,8 @@ public class GitHubAPIService {
                                 response -> Mono.error(new ForbiddenException("You might have exceeded the request limit.")))
                         .onStatus(HttpStatus.NOT_ACCEPTABLE::equals,
                                 response -> Mono.error(new NotAcceptableException("Not acceptable")))
+                        .onStatus(HttpStatus.INTERNAL_SERVER_ERROR::equals,
+                                response -> Mono.error(new InternalServerErrorException("Internal error, you might have exceeded the request limit")))
                         .bodyToFlux(GitHubRepository.class)
                         .filter(repo -> repo.owner().login().equals(username))
                         .flatMap(repo -> fetchBranchesForRepository(repo.owner(), repo.name(), username))
