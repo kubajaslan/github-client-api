@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record GitHubRepository(String name, Owner owner, List<Branch> branches) {
+@JsonIgnoreProperties(ignoreUnknown = true, value = {"fork"})
+public record GitHubRepository(String name, Owner owner, boolean fork, List<Branch> branches) {
 }
 
 

@@ -44,36 +44,42 @@ public class GitHubAPIService {
         return webClient.get()
                         .uri("/users/{username}/repos?per_page=100", username)
                         .header("Accept", "application/json")
+
                         .retrieve()
                         .onStatus(HttpStatus.NOT_FOUND::equals,
                                 response -> Mono.error(new NotFoundException("User not found")))
                         .onStatus(HttpStatus.FORBIDDEN::equals,
-                                response -> Mono.error(new ForbiddenException("You might have exceeded the request limit.")))
+                                response -> Mono.error(
+                                        new ForbiddenException("You might have exceeded the request limit.")))
                         .onStatus(HttpStatus.NOT_ACCEPTABLE::equals,
                                 response -> Mono.error(new NotAcceptableException("Not acceptable")))
                         .onStatus(HttpStatus.INTERNAL_SERVER_ERROR::equals,
-                                response -> Mono.error(new InternalServerErrorException("Internal error, you might have exceeded the request limit")))
+                                response -> Mono.error(new InternalServerErrorException(
+                                        "Internal error, you might have exceeded the request limit")))
                         .bodyToFlux(GitHubRepository.class)
-                        .filter(repo -> repo.owner().login().equals(username))
-                        .flatMap(repo -> fetchBranchesForRepository(repo.owner(), repo.name(), username))
+                        .filter(repo -> !repo.fork())
+                        .flatMap(repo -> fetchBranchesForRepository(repo.owner(), repo.name(), username, repo.fork()))
                         .collectList();
     }
 
-    private Mono<GitHubRepository> fetchBranchesForRepository(Owner owner, String repoName, String ownerLogin) {
+    private Mono<GitHubRepository> fetchBranchesForRepository(Owner owner, String
+            repoName, String ownerLogin, boolean fork) {
         return webClient.get()
                         .uri("/repos/{owner}/{repoName}/branches", owner.login(), repoName)
                         .header("Accept", "application/json")
                         .retrieve()
                         .bodyToFlux(Branch.class)
-                        .flatMap(branch -> fetchLastCommitSHA(owner.login(), repoName, branch.name())
+                        .flatMap(branch -> fetchLastCommitSHA(owner.login(), repoName,
+                                branch.name())
                                 .map(lastCommitSHA -> new Branch(branch.name(), lastCommitSHA)))
                         .collectList()
-                        .map(branches -> new GitHubRepository(repoName, owner, branches));
+                        .map(branches -> new GitHubRepository(repoName, owner, fork, branches));
     }
 
     private Mono<String> fetchLastCommitSHA(String owner, String repoName, String branchName) {
         return webClient.get()
-                        .uri("/repos/{owner}/{repoName}/commits/{branchName}", owner, repoName, branchName)
+                        .uri("/repos/{owner}/{repoName}/commits/{branchName}", owner, repoName,
+                                branchName)
                         .header("Accept", "application/json")
                         .retrieve()
                         .bodyToMono(JsonNode.class)
